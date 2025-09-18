@@ -19,14 +19,14 @@ st.caption("問いと沈黙から始まる、関係性の設計空間")
 
 space = st.radio("空間を選んでください", ["掲示板", "仮つながりスペース", "1対1チャット"], horizontal=True)
 
-from modules.user import login_user, register_user, get_current_user
+from modules.user import login_user as login_user_func, register_user, get_current_user
 
 if get_current_user() is None:
     st.subheader("🔐 ログイン")
-    login_user = st.text_input("ユーザー名", key="login_username")
-    login_pass = st.text_input("パスワード", type="password", key="login_password")
+    input_username = st.text_input("ユーザー名", key="login_username")
+    input_password = st.text_input("パスワード", type="password", key="login_password")
     if st.button("ログイン"):
-        if login_user(username, password):
+        if login_user_func(input_username, input_password):
             st.success("ログインしました")
             st.rerun()
         else:
