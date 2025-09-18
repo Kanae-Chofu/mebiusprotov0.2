@@ -23,8 +23,8 @@ from modules.user import login_user, register_user, get_current_user
 
 if get_current_user() is None:
     st.subheader("🔐 ログイン")
-    username = st.text_input("ユーザー名")
-    password = st.text_input("パスワード", type="password")
+    login_user = st.text_input("ユーザー名", key="login_username")
+    login_pass = st.text_input("パスワード", type="password", key="login_password")
     if st.button("ログイン"):
         if login_user(username, password):
             st.success("ログインしました")
@@ -33,8 +33,9 @@ if get_current_user() is None:
             st.error("ログイン失敗")
 
     st.subheader("🆕 新規登録")
-    new_user = st.text_input("新しいユーザー名")
-    new_pass = st.text_input("パスワード", type="password")
+    new_user = st.text_input("ユーザー名", key="register_username")
+    new_pass = st.text_input("パスワード", type="password", key="register_password")
+
     if st.button("登録"):
         result = register_user(new_user, new_pass)
         if result == "OK":
