@@ -1,5 +1,18 @@
 # main.py
 import streamlit as st
+
+# 🧭 user.py を先にインポートしてから初期化
+from modules.user import (
+    login_user as login_user_func,
+    register_user,
+    get_current_user,
+    init_user_db
+)
+
+# 🧱 データベース初期化（最初に必ず呼ぶ）
+init_user_db()
+
+# 🧩 他のモジュールをインポート
 from modules import board, karitunagari, chat
 
 # 🌙 ダークモードCSS（共通）
@@ -17,10 +30,7 @@ button { background-color: #426AB3 !important; color:#FFFFFF !important; border:
 st.title("めびうす redesign")
 st.caption("問いと沈黙から始まる、関係性の設計空間")
 
-space = st.radio("空間を選んでください", ["掲示板", "仮つながりスペース", "1対1チャット"], horizontal=True)
-
-from modules.user import login_user as login_user_func, register_user, get_current_user
-
+# 🔐 ログインチェック
 if get_current_user() is None:
     st.subheader("🔐 ログイン")
     input_username = st.text_input("ユーザー名", key="login_username")
@@ -35,7 +45,6 @@ if get_current_user() is None:
     st.subheader("🆕 新規登録")
     new_user = st.text_input("ユーザー名", key="register_username")
     new_pass = st.text_input("パスワード", type="password", key="register_password")
-
     if st.button("登録"):
         result = register_user(new_user, new_pass)
         if result == "OK":
@@ -45,11 +54,11 @@ if get_current_user() is None:
     st.stop()
 
 # 🚪空間ごとのルーティング
+space = st.radio("空間を選んでください", ["掲示板", "仮つながりスペース", "1対1チャット"], horizontal=True)
+
 if space == "掲示板":
     board.render()
-
 elif space == "仮つながりスペース":
     karitunagari.render()
-
 elif space == "1対1チャット":
     chat.render()
