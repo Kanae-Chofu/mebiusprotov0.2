@@ -11,7 +11,7 @@ build/
 .streamlit/
 
 # SQLiteデータベース
-db/*.db
+#db/*.db
 
 # OS・エディタ系
 .DS_Store
