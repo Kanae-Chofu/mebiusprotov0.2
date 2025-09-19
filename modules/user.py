@@ -92,6 +92,29 @@ def update_kari_id(username, new_kari_id):
     conn.commit()
     conn.close()
 
+# 友達追加 1:1チャット用
+def add_friend(username, friend_username):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS friends (
+        owner TEXT,
+        friend TEXT,
+        added_at TEXT
+    )''')
+    c.execute("INSERT INTO friends (owner, friend, added_at) VALUES (?, ?, ?)",
+              (username, friend_username, now_str()))
+    conn.commit()
+    conn.close()
+
+# 友達一覧取得 1:1チャット用
+def get_friends(username):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT friend FROM friends WHERE owner=?", (username,))
+    result = [row[0] for row in c.fetchall()]
+    conn.close()
+    return result
+
 # 🔓 ログアウト
 def logout():
     st.session_state.username = None
