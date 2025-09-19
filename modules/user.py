@@ -76,6 +76,22 @@ def get_kari_id(username):
 def get_current_user():
     return st.session_state.get("username", None)
 
+# 表示名の更新
+def update_display_name(username, new_name):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("UPDATE users SET display_name=? WHERE username=?", (new_name.strip(), username))
+    conn.commit()
+    conn.close()
+
+# 仮IDの更新
+def update_kari_id(username, new_kari_id):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("UPDATE users SET kari_id=? WHERE username=?", (new_kari_id.strip(), username))
+    conn.commit()
+    conn.close()
+
 # 🔓 ログアウト
 def logout():
     st.session_state.username = None
