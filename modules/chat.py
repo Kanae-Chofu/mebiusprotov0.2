@@ -6,7 +6,7 @@ from modules.utils import now_str
 
 DB_PATH = "db/mebius.db"
 
-# 🧱 DB初期化（chat_messages）
+# 🧱 DB初期化（chat_messages・friends）
 def init_chat_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -44,6 +44,7 @@ def get_messages(user, partner):
     conn.close()
     return messages
 
+# 👥 友達管理
 def get_friends(user):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -51,6 +52,13 @@ def get_friends(user):
     friends = [row[0] for row in c.fetchall()]
     conn.close()
     return friends
+
+def add_friend(user, friend):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("INSERT OR IGNORE INTO friends (user, friend) VALUES (?, ?)", (user, friend))
+    conn.commit()
+    conn.close()
 
 # 🖥 UI表示
 def render():
@@ -63,9 +71,23 @@ def render():
     st.subheader("💬 1対1チャット空間")
     st.write(f"あなたの表示名： `{get_display_name(user)}`")
 
+    # 👥 友達追加UI
+    st.markdown("---")
+    st.subheader("👥 友達を追加する")
+    new_friend = st.text_input("追加したいユーザー名（表示名または仮ID）", key="add_friend_input")
+    if st.button("友達追加"):
+        if new_friend and new_friend != user:
+            add_friend(user, new_friend)
+            st.success(f"{new_friend} を友達に追加しました")
+            st.rerun()
+        else:
+            st.error("自分自身は追加できません")
+
+    # 💬 チャット相手選択
+    st.markdown("---")
     friends = get_friends(user)
     if not friends:
-        st.info("まだ友達がいません。仮つながりスペースで申請してみましょう。")
+        st.info("まだ友達がいません。仮つながりスペースや上の入力欄から追加してください。")
         return
 
     partner = st.selectbox("チャット相手を選んでください", friends)
