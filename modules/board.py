@@ -68,15 +68,18 @@ def render():
     st.subheader("🧵 掲示板スレッド一覧")
     threads = load_threads()
 
-    new_title = st.text_input("新しいスレッド名（64文字まで）", max_chars=64)
-    if st.button("スレッド作成"):
-        title = sanitize_message(new_title, 64)
-        if title:
-            create_thread(title)
-            st.success("スレッドを作成しました")
-            st.rerun()
-        else:
-            st.warning("スレッド名を入力してください")
+    # スレッド作成フォーム
+    with st.form(key="thread_form", clear_on_submit=True):
+        new_title = st.text_input("新しいスレッド名（64文字まで）", max_chars=64)
+        submitted = st.form_submit_button("スレッド作成")
+        if submitted:
+            title = sanitize_message(new_title, 64)
+            if title:
+                create_thread(title)
+                st.success("スレッドを作成しました")
+                st.rerun()
+            else:
+                st.warning("スレッド名を入力してください")
 
     st.markdown("---")
     for tid, title, created in threads:
@@ -95,11 +98,14 @@ def render():
         for username, msg, ts in messages:
             st.write(f"[{ts}] **{username}**: {msg}")
 
-        new_msg = st.text_input("メッセージ（150文字まで）", max_chars=150, key="board_input")
-        if st.button("送信"):
-            msg = sanitize_message(new_msg, 150)
-            if msg:
-                save_message(user, msg, st.session_state.thread_id)
-                st.rerun()
-            else:
-                st.warning("メッセージを入力してください")
+        # メッセージ送信フォーム（エンターキー対応）
+        with st.form(key="board_form", clear_on_submit=True):
+            new_msg = st.text_input("メッセージ（150文字まで）", max_chars=150)
+            submitted = st.form_submit_button("送信")
+            if submitted:
+                msg = sanitize_message(new_msg, 150)
+                if msg:
+                    save_message(user, msg, st.session_state.thread_id)
+                    st.rerun()
+                else:
+                    st.warning("メッセージを入力してください")
