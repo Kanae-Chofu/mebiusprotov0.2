@@ -130,7 +130,7 @@ def render():
         st.markdown("---")
         st.markdown("### 🤖 AIフィードバック")
         st.write("・発言割合：" + auto_feedback(user, partner))
-        st.write("・問いの頻度：" + question_feedback(user,partner))
+        st.write("・問いの頻度：" + question_feedback(user, partner))
         st.write("・沈黙の余白：" + silence_feedback(user, partner))
         st.write("・感情語の使用：" + emotion_feedback(user, partner))
         st.write("・応答率：" + response_feedback(user, partner))
@@ -138,16 +138,9 @@ def render():
         st.write("・話題の広がり：" + diversity_feedback(user, partner))
         st.write("・自己開示度：" + disclosure_feedback(user, partner))
 
-        # 手動フィードバック
+        # 手動フィードバック入力
         st.markdown("---")
         st.markdown("### 📝 あなたのフィードバック")
-        feedback_list = get_feedback(user, partner)
-        if feedback_list:
-            for fb, ts in feedback_list:
-                st.write(f"- {fb}（{ts}）")
-        else:
-            st.write("まだフィードバックはありません。")
-
         feedback_text = st.text_input("フィードバックを入力", key="feedback_input")
         if st.button("送信"):
             if feedback_text:
@@ -156,3 +149,14 @@ def render():
                 st.rerun()
             else:
                 st.warning("フィードバックを入力してください")
+
+        # 過去のフィードバック履歴（選択式表示）
+        st.markdown("---")
+        st.markdown("### 🕊 過去のフィードバックを振り返る")
+        feedback_list = get_feedback(user, partner)
+        if feedback_list:
+            options = [f"{ts}｜{fb}" for fb, ts in feedback_list]
+            selected = st.selectbox("表示したいフィードバックを選んでください", options)
+            st.write(f"選択されたフィードバック：{selected}")
+        else:
+            st.write("まだフィードバックはありません。")
