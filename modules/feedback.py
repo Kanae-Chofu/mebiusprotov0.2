@@ -5,7 +5,7 @@ from modules.utils import now_str
 
 DB_PATH = "db/mebius.db"
 
-# 初期化
+# 🧱 初期化
 def init_feedback_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -19,7 +19,7 @@ def init_feedback_db():
     conn.commit()
     conn.close()
 
-# 手動フィードバック保存・取得
+# 💾 手動フィードバック保存
 def save_feedback(sender, receiver, feedback_text):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -28,6 +28,7 @@ def save_feedback(sender, receiver, feedback_text):
     conn.commit()
     conn.close()
 
+# 📥 手動フィードバック取得（複数件）
 def get_feedback(sender, receiver):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -38,7 +39,7 @@ def get_feedback(sender, receiver):
     conn.close()
     return results
 
-# 会話取得（共通）
+# 💬 会話取得（共通）
 def get_chat(sender, receiver):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -49,7 +50,7 @@ def get_chat(sender, receiver):
     conn.close()
     return rows
 
-# 発言割合
+# 🤖 発言割合
 def auto_feedback(sender, receiver):
     rows = get_chat(sender, receiver)
     if not rows:
@@ -64,7 +65,7 @@ def auto_feedback(sender, receiver):
     else:
         return f"バランスの取れた会話でした（{int(ratio*100)}%）"
 
-# 問いの頻度
+# 🤖 問いの頻度
 def question_feedback(sender, receiver):
     rows = get_chat(sender, receiver)
     total = len(rows)
@@ -76,7 +77,7 @@ def question_feedback(sender, receiver):
     else:
         return f"問いが適度に含まれていて、会話に流れがありました（{question_count}件）"
 
-# 沈黙の余白（平均秒数）
+# 🤖 沈黙の余白（平均秒数）
 def silence_feedback(sender, receiver):
     rows = get_chat(sender, receiver)
     if len(rows) < 2:
@@ -91,7 +92,7 @@ def silence_feedback(sender, receiver):
     else:
         return f"テンポよく会話が進みました（平均 {int(avg_gap)}秒）"
 
-# 感情語の使用率
+# 🤖 感情語の使用率
 def emotion_feedback(sender, receiver):
     emotion_words = ["嬉しい", "楽しい", "悲しい", "不安", "安心", "つらい", "好き", "嫌い"]
     rows = get_chat(sender, receiver)
@@ -103,7 +104,7 @@ def emotion_feedback(sender, receiver):
     else:
         return f"感情語が適度に使われていました（{count}件）"
 
-# 応答率（簡易：相手の直後に返した回数）
+# 🤖 応答率（簡易：相手の直後に返した回数）
 def response_feedback(sender, receiver):
     rows = get_chat(sender, receiver)
     if len(rows) < 2:
@@ -120,7 +121,7 @@ def response_feedback(sender, receiver):
     else:
         return f"問いや沈黙が中心の会話だったかもしれません（応答率 {int(ratio*100)}%）"
 
-# 会話の長さ
+# 🤖 会話の長さ
 def length_feedback(sender, receiver):
     rows = get_chat(sender, receiver)
     if not rows:
@@ -132,3 +133,32 @@ def length_feedback(sender, receiver):
         return f"継続的なやりとりがあり、関係性が育っているようです（{len(rows)}件・{int(duration)}分）"
     else:
         return f"短めの会話でした（{len(rows)}件・{int(duration)}分）"
+
+# 🤖 話題の広がり（語彙の多様性）
+def diversity_feedback(sender, receiver):
+    rows = get_chat(sender, receiver)
+    sender_msgs = [m for s, m, _ in rows if s == sender]
+    all_words = []
+    for msg in sender_msgs:
+        words = re.findall(r'\b\w+\b', msg)
+        all_words.extend(words)
+    unique_words = set(all_words)
+    count = len(unique_words)
+    if count > 50:
+        return f"語彙が豊かで、多様な話題が展開されていました（{count}種類）"
+    elif count > 20:
+        return f"適度な語彙の広がりがあり、問いが自然に展開されていました（{count}種類）"
+    else:
+        return f"語彙は少なめでした（{count}種類）"
+
+# 自己開示度
+def disclosure_feedback(sender, receiver):
+    keywords = ["私", "自分", "最近", "悩み", "好き", "嫌い", "思う", "考える"]
+    rows = get_chat(sender, receiver)
+    count = sum(1 for s, m, _ in rows if s == sender and any(k in m for k in keywords))
+    if count > 10:
+        return f"自己開示が多く、関係性が深まっていたようです（{count}件）"
+    elif count > 3:
+        return f"自分のことを適度に語ることで、安心感が育まれていたようです（{count}件）"
+    else:
+        return f"自己開示は控えめでした。問いや沈黙が中心だったかもしれません（{count}件）"
