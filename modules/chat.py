@@ -18,59 +18,71 @@ from modules.feedback import (
 
 DB_PATH = "db/mebius.db"
 
+# 定数（設計意図の明示）
+MAX_NAME_LEN = 64
+MAX_FEEDBACK_LEN = 150
+
 # DB初期化
 def init_chat_db():
     conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS chat_messages (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        sender TEXT,
-        receiver TEXT,
-        message TEXT,
-        timestamp TEXT
-    )''')
-    c.execute('''CREATE TABLE IF NOT EXISTS friends (
-        user TEXT,
-        friend TEXT,
-        UNIQUE(user, friend)
-    )''')
-    conn.commit()
-    conn.close()
+    try:
+        c = conn.cursor()
+        c.execute('''CREATE TABLE IF NOT EXISTS chat_messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            sender TEXT,
+            receiver TEXT,
+            message TEXT,
+            timestamp TEXT
+        )''')
+        c.execute('''CREATE TABLE IF NOT EXISTS friends (
+            user TEXT,
+            friend TEXT,
+            UNIQUE(user, friend)
+        )''')
+        conn.commit()
+    finally:
+        conn.close()
 
 # メッセージ保存・取得
 def save_message(sender, receiver, message):
     conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("INSERT INTO chat_messages (sender, receiver, message, timestamp) VALUES (?, ?, ?, ?)",
-              (sender, receiver, message, now_str()))
-    conn.commit()
-    conn.close()
+    try:
+        c = conn.cursor()
+        c.execute("INSERT INTO chat_messages (sender, receiver, message, timestamp) VALUES (?, ?, ?, ?)",
+                  (sender, receiver, message, now_str()))
+        conn.commit()
+    finally:
+        conn.close()
 
 def get_messages(user, partner):
     conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute('''SELECT sender, message FROM chat_messages
-                 WHERE (sender=? AND receiver=?) OR (sender=? AND receiver=?)
-                 ORDER BY timestamp''', (user, partner, partner, user))
-    messages = c.fetchall()
-    conn.close()
-    return messages
+    try:
+        c = conn.cursor()
+        c.execute('''SELECT sender, message FROM chat_messages
+                     WHERE (sender=? AND receiver=?) OR (sender=? AND receiver=?)
+                     ORDER BY timestamp''', (user, partner, partner, user))
+        return c.fetchall()
+    finally:
+        conn.close()
 
 # 友達管理
 def get_friends(user):
     conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("SELECT friend FROM friends WHERE user=?", (user,))
-    friends = [row[0] for row in c.fetchall()]
-    conn.close()
-    return friends
+    try:
+        c = conn.cursor()
+        c.execute("SELECT friend FROM friends WHERE user=?", (user,))
+        return [row[0] for row in c.fetchall()]
+    finally:
+        conn.close()
 
 def add_friend(user, friend):
     conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("INSERT OR IGNORE INTO friends (user, friend) VALUES (?, ?)", (user, friend))
-    conn.commit()
-    conn.close()
+    try:
+        c = conn.cursor()
+        c.execute("INSERT OR IGNORE INTO friends (user, friend) VALUES (?, ?)", (user, friend))
+        conn.commit()
+    finally:
+        conn.close()
 
 # UI表示
 def render():
@@ -88,7 +100,7 @@ def render():
     # 友達追加
     st.markdown("---")
     st.subheader("👥 友達を追加する")
-    new_friend = st.text_input("追加したいユーザー名", key="add_friend_input")
+    new_friend = st.text_input("追加したいユーザー名", key="add_friend_input", max_chars=MAX_NAME_LEN)
     if st.button("追加"):
         if new_friend and new_friend != user:
             add_friend(user, new_friend)
@@ -120,7 +132,7 @@ def render():
                 </span></div>""", unsafe_allow_html=True
             )
 
-        # メッセージ入力
+        # メッセージ入力（Enterキー送信）
         new_msg = st.chat_input("メッセージを入力")
         if new_msg:
             save_message(user, partner, new_msg)
@@ -141,7 +153,7 @@ def render():
         # 手動フィードバック入力
         st.markdown("---")
         st.markdown("### 📝 あなたのフィードバック")
-        feedback_text = st.text_input("フィードバックを入力", key="feedback_input")
+        feedback_text = st.text_input("フィードバックを入力", key="feedback_input", max_chars=MAX_FEEDBACK_LEN)
         if st.button("送信"):
             if feedback_text:
                 save_feedback(user, partner, feedback_text)
