@@ -5,50 +5,60 @@ from modules.utils import now_str
 
 DB_PATH = "db/mebius.db"
 
+# 定数（設計意図の明示）
+EMOTION_WORDS = ["嬉しい", "楽しい", "悲しい", "不安", "安心", "つらい", "好き", "嫌い"]
+DISCLOSURE_KEYWORDS = ["私", "自分", "最近", "悩み", "好き", "嫌い", "思う", "考える"]
+
 # 🧱 初期化
 def init_feedback_db():
     conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS chat_feedback (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        sender TEXT,
-        receiver TEXT,
-        feedback TEXT,
-        timestamp TEXT
-    )''')
-    conn.commit()
-    conn.close()
+    try:
+        c = conn.cursor()
+        c.execute('''CREATE TABLE IF NOT EXISTS chat_feedback (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            sender TEXT,
+            receiver TEXT,
+            feedback TEXT,
+            timestamp TEXT
+        )''')
+        conn.commit()
+    finally:
+        conn.close()
 
 # 💾 手動フィードバック保存
 def save_feedback(sender, receiver, feedback_text):
     conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("INSERT INTO chat_feedback (sender, receiver, feedback, timestamp) VALUES (?, ?, ?, ?)",
-              (sender, receiver, feedback_text, now_str()))
-    conn.commit()
-    conn.close()
+    try:
+        c = conn.cursor()
+        c.execute("INSERT INTO chat_feedback (sender, receiver, feedback, timestamp) VALUES (?, ?, ?, ?)",
+                  (sender, receiver, feedback_text, now_str()))
+        conn.commit()
+    finally:
+        conn.close()
 
 # 📥 手動フィードバック取得（複数件）
 def get_feedback(sender, receiver):
     conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute('''SELECT feedback, timestamp FROM chat_feedback
-                 WHERE sender=? AND receiver=?
-                 ORDER BY timestamp DESC''', (sender, receiver))
-    results = c.fetchall()
-    conn.close()
-    return results
+    try:
+        c = conn.cursor()
+        c.execute('''SELECT feedback, timestamp FROM chat_feedback
+                     WHERE sender=? AND receiver=?
+                     ORDER BY timestamp DESC''', (sender, receiver))
+        return c.fetchall()
+    finally:
+        conn.close()
 
 # 💬 会話取得（共通）
 def get_chat(sender, receiver):
     conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute('''SELECT sender, message, timestamp FROM chat_messages
-                 WHERE (sender=? AND receiver=?) OR (sender=? AND receiver=?)
-                 ORDER BY timestamp''', (sender, receiver, receiver, sender))
-    rows = c.fetchall()
-    conn.close()
-    return rows
+    try:
+        c = conn.cursor()
+        c.execute('''SELECT sender, message, timestamp FROM chat_messages
+                     WHERE (sender=? AND receiver=?) OR (sender=? AND receiver=?)
+                     ORDER BY timestamp''', (sender, receiver, receiver, sender))
+        return c.fetchall()
+    finally:
+        conn.close()
 
 # 🤖 発言割合
 def auto_feedback(sender, receiver):
@@ -94,9 +104,8 @@ def silence_feedback(sender, receiver):
 
 # 🤖 感情語の使用率
 def emotion_feedback(sender, receiver):
-    emotion_words = ["嬉しい", "楽しい", "悲しい", "不安", "安心", "つらい", "好き", "嫌い"]
     rows = get_chat(sender, receiver)
-    count = sum(1 for s, m, _ in rows if s == sender and any(word in m for word in emotion_words))
+    count = sum(1 for s, m, _ in rows if s == sender and any(word in m for word in EMOTION_WORDS))
     if count == 0:
         return "感情表現は控えめでした。沈黙や問いが中心だったかも"
     elif count > 5:
@@ -151,11 +160,10 @@ def diversity_feedback(sender, receiver):
     else:
         return f"語彙は少なめでした（{count}種類）"
 
-# 自己開示度
+# 🤖 自己開示度
 def disclosure_feedback(sender, receiver):
-    keywords = ["私", "自分", "最近", "悩み", "好き", "嫌い", "思う", "考える"]
     rows = get_chat(sender, receiver)
-    count = sum(1 for s, m, _ in rows if s == sender and any(k in m for k in keywords))
+    count = sum(1 for s, m, _ in rows if s == sender and any(k in m for k in DISCLOSURE_KEYWORDS))
     if count > 10:
         return f"自己開示が多く、関係性が深まっていたようです（{count}件）"
     elif count > 3:
