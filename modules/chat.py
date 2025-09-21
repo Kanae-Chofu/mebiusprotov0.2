@@ -1,8 +1,8 @@
-# modules/chat.py
 import streamlit as st
 import sqlite3
 from modules.user import get_current_user, get_display_name
 from modules.utils import now_str
+from modules.feedback import init_feedback_db, save_feedback, get_feedback
 
 DB_PATH = "db/mebius.db"
 
@@ -63,6 +63,8 @@ def add_friend(user, friend):
 # 🖥 UI表示
 def render():
     init_chat_db()
+    init_feedback_db()
+
     user = get_current_user()
     if not user:
         st.warning("ログインしてください（共通ID）")
@@ -110,3 +112,19 @@ def render():
         if new_msg:
             save_message(user, partner, new_msg)
             st.rerun()
+
+        # 📝 フィードバック入力
+        st.markdown("---")
+        st.subheader("📝 この雑談へのフィードバック")
+        existing_feedback = get_feedback(user, partner)
+        if existing_feedback:
+            st.info(f"以前のフィードバック：{existing_feedback[0]}（{existing_feedback[1]}）")
+
+        feedback_text = st.text_input("フィードバックを入力（例：問いが深かった、また話したい）", key="feedback_input")
+        if st.button("フィードバックを送信"):
+            if feedback_text:
+                save_feedback(user, partner, feedback_text)
+                st.success("フィードバックを保存しました")
+                st.rerun()
+            else:
+                st.warning("フィードバックを入力してください")
