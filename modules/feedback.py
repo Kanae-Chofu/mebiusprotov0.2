@@ -1,3 +1,5 @@
+# modules/feedback.py
+# チャットフィードバック管理モジュール  
 import sqlite3
 from modules.utils import now_str
 
