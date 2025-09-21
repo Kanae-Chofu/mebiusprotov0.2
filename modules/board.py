@@ -1,4 +1,3 @@
-# modules/board.py
 import streamlit as st
 import sqlite3
 from modules.utils import now_str, sanitize_message
@@ -6,56 +5,68 @@ from modules.user import get_current_user
 
 DB_PATH = "db/mebius.db"
 
+# 定数化（設計意図の明示）
+MAX_TITLE_LEN = 64
+MAX_MESSAGE_LEN = 150
+
 # 🧱 DB初期化（スレッド・メッセージ）
 def init_board_db():
     conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS threads (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT,
-        created_at TEXT
-    )''')
-    c.execute('''CREATE TABLE IF NOT EXISTS board_messages (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT,
-        message TEXT,
-        timestamp TEXT,
-        thread_id INTEGER
-    )''')
-    conn.commit()
-    conn.close()
+    try:
+        c = conn.cursor()
+        c.execute('''CREATE TABLE IF NOT EXISTS threads (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT,
+            created_at TEXT
+        )''')
+        c.execute('''CREATE TABLE IF NOT EXISTS board_messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT,
+            message TEXT,
+            timestamp TEXT,
+            thread_id INTEGER
+        )''')
+        conn.commit()
+    finally:
+        conn.close()
 
 # 📥 スレッド・メッセージ処理
 def create_thread(title):
     conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("INSERT INTO threads (title, created_at) VALUES (?, ?)", (title, now_str()))
-    conn.commit()
-    conn.close()
+    try:
+        c = conn.cursor()
+        c.execute("INSERT INTO threads (title, created_at) VALUES (?, ?)", (title, now_str()))
+        conn.commit()
+    finally:
+        conn.close()
 
 def load_threads():
     conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("SELECT id, title, created_at FROM threads ORDER BY id DESC")
-    threads = c.fetchall()
-    conn.close()
-    return threads
+    try:
+        c = conn.cursor()
+        c.execute("SELECT id, title, created_at FROM threads ORDER BY id DESC")
+        return c.fetchall()
+    finally:
+        conn.close()
 
 def save_message(username, message, thread_id):
     conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("INSERT INTO board_messages (username, message, timestamp, thread_id) VALUES (?, ?, ?, ?)",
-              (username, message, now_str(), thread_id))
-    conn.commit()
-    conn.close()
+    try:
+        c = conn.cursor()
+        c.execute("INSERT INTO board_messages (username, message, timestamp, thread_id) VALUES (?, ?, ?, ?)",
+                  (username, message, now_str(), thread_id))
+        conn.commit()
+    finally:
+        conn.close()
 
 def load_messages(thread_id):
     conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("SELECT username, message, timestamp FROM board_messages WHERE thread_id=? ORDER BY id DESC", (thread_id,))
-    messages = c.fetchall()
-    conn.close()
-    return messages
+    try:
+        c = conn.cursor()
+        c.execute("SELECT username, message, timestamp FROM board_messages WHERE thread_id=? ORDER BY id DESC", (thread_id,))
+        return c.fetchall()
+    finally:
+        conn.close()
 
 # 🖥 UI表示
 def render():
@@ -70,10 +81,10 @@ def render():
 
     # スレッド作成フォーム
     with st.form(key="thread_form", clear_on_submit=True):
-        new_title = st.text_input("新しいスレッド名（64文字まで）", max_chars=64)
+        new_title = st.text_input(f"新しいスレッド名（{MAX_TITLE_LEN}文字まで）", max_chars=MAX_TITLE_LEN)
         submitted = st.form_submit_button("スレッド作成")
         if submitted:
-            title = sanitize_message(new_title, 64)
+            title = sanitize_message(new_title, MAX_TITLE_LEN)
             if title:
                 create_thread(title)
                 st.success("スレッドを作成しました")
@@ -83,7 +94,7 @@ def render():
 
     st.markdown("---")
     for tid, title, created in threads:
-        if st.button(f"{title}（{created}）", key=f"thread_{tid}"):
+        if st.button(f"{title}（{created} JST）", key=f"thread_{tid}"):
             st.session_state.thread_id = tid
             st.rerun()
 
@@ -96,16 +107,11 @@ def render():
 
         messages = load_messages(st.session_state.thread_id)
         for username, msg, ts in messages:
-            st.write(f"[{ts}] **{username}**: {msg}")
+            st.write(f"[{ts} JST] **{username}**: {msg}")
 
-        # メッセージ送信フォーム（エンターキー対応）
-        with st.form(key="board_form", clear_on_submit=True):
-            new_msg = st.text_input("メッセージ（150文字まで）", max_chars=150)
-            submitted = st.form_submit_button("送信")
-            if submitted:
-                msg = sanitize_message(new_msg, 150)
-                if msg:
-                    save_message(user, msg, st.session_state.thread_id)
-                    st.rerun()
-                else:
-                    st.warning("メッセージを入力してください")
+        # メッセージ送信欄（Enterキーで送信可能）
+        msg = st.chat_input(f"メッセージ（{MAX_MESSAGE_LEN}文字まで）")
+        if msg:
+            msg = sanitize_message(msg, MAX_MESSAGE_LEN)
+            save_message(user, msg, st.session_state.thread_id)
+            st.rerun()
