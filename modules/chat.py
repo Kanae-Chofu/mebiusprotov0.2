@@ -6,7 +6,8 @@ from modules.feedback import (
     init_feedback_db,
     save_feedback,
     get_feedback,
-    auto_feedback
+    auto_feedback,
+    question_feedback
 )
 
 DB_PATH = "db/mebius.db"
@@ -118,11 +119,17 @@ def render():
             save_message(user, partner, new_msg)
             st.rerun()
 
-        # 🤖 AIによる自動フィードバック
+        # 🤖 AIフィードバック：発言割合
         st.markdown("---")
-        st.subheader("🤖 AIによる会話フィードバック")
+        st.subheader("🤖 AIフィードバック：発言割合")
         auto_fb = auto_feedback(user, partner)
         st.info(auto_fb)
+
+        # 🤖 AIフィードバック：問いの頻度
+        st.markdown("---")
+        st.subheader("🤖 AIフィードバック：問いの頻度")
+        question_fb = question_feedback(user, partner)
+        st.info(question_fb)
 
         # 📝 手動フィードバック入力
         st.markdown("---")
