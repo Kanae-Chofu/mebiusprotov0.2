@@ -76,10 +76,12 @@ def render():
         st.warning("ログインしてください（共通ID）")
         return
 
+    st.subheader("💬 1対1チャット空間")
     st.write(f"あなたの表示名： `{get_display_name(user)}`")
 
     # 友達追加
-    st.markdown("### 友達追加")
+    st.markdown("---")
+    st.subheader("👥 友達を追加する")
     new_friend = st.text_input("追加したいユーザー名", key="add_friend_input")
     if st.button("追加"):
         if new_friend and new_friend != user:
@@ -92,18 +94,25 @@ def render():
     # チャット相手選択
     friends = get_friends(user)
     if not friends:
-        st.write("まだ友達がいません。追加してください。")
+        st.info("まだ友達がいません。追加してください。")
         return
 
     partner = st.selectbox("チャット相手を選択", friends)
     if partner:
+        st.session_state.partner = partner
         st.write(f"チャット相手： `{get_display_name(partner)}`")
 
-        # メッセージ表示
+        # メッセージ表示（吹き出しスタイル）
         messages = get_messages(user, partner)
         for sender, msg in messages:
-            prefix = "あなた：" if sender == user else f"{get_display_name(sender)}："
-            st.write(f"{prefix} {msg}")
+            align = "right" if sender == user else "left"
+            bg = "#1F2F54" if align == "right" else "#426AB3"
+            st.markdown(
+                f"""<div style='text-align:{align}; margin:5px 0;'>
+                <span style='background-color:{bg}; color:#FFFFFF; padding:8px 12px; border-radius:10px; display:inline-block; max-width:80%;'>
+                {msg}
+                </span></div>""", unsafe_allow_html=True
+            )
 
         # メッセージ入力
         new_msg = st.chat_input("メッセージを入力")
@@ -112,12 +121,14 @@ def render():
             st.rerun()
 
         # AIフィードバック（シンプル表示）
-        st.markdown("### AIフィードバック")
+        st.markdown("---")
+        st.markdown("### 🤖 AIフィードバック")
         st.write("・発言割合：" + auto_feedback(user, partner))
         st.write("・問いの頻度：" + question_feedback(user, partner))
 
         # 手動フィードバック
-        st.markdown("### あなたのフィードバック")
+        st.markdown("---")
+        st.markdown("### 📝 あなたのフィードバック")
         feedback_list = get_feedback(user, partner)
         if feedback_list:
             for fb, ts in feedback_list:
