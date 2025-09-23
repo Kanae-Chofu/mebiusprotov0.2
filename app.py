@@ -1,4 +1,4 @@
-# main.py
+# app.py
 import streamlit as st
 
 # 🧭 ユーザー管理モジュールの読み込みと初期化
@@ -13,7 +13,10 @@ from modules.user import (
     get_kari_id
 )
 
-init_user_db()  # SQLiteデータベース初期化（usersテーブル）
+# 初回のみDB初期化（セッションステートで制御）
+if "db_initialized" not in st.session_state:
+    init_user_db()
+    st.session_state.db_initialized = True
 
 # 🧩 空間モジュールの読み込み
 from modules import board, karitunagari, chat
@@ -42,20 +45,24 @@ if user is None:
     input_password = st.text_input("パスワード", type="password", key="login_password")
     if st.button("ログイン"):
         if login_user_func(input_username, input_password):
-            st.success("ログインしました")
+            st.success(f"ようこそ、{input_username} さん")
             st.rerun()
         else:
-            st.error("ログイン失敗")
+            st.error("ログイン失敗：ユーザー名またはパスワードが間違っています")
 
     st.subheader("🆕 新規登録")
-    new_user = st.text_input("ユーザー名", key="register_username")
-    new_pass = st.text_input("パスワード", type="password", key="register_password")
+    new_user = st.text_input("ユーザー名（新規）", key="register_username")
+    new_pass = st.text_input("パスワード（新規）", type="password", key="register_password")
     if st.button("登録"):
         result = register_user(new_user, new_pass)
         if result == "OK":
-            st.success("登録完了！ログインしてください")
+            st.success("登録完了！ログイン画面に戻ってください")
+        elif result == "duplicate":
+            st.error("このユーザー名はすでに使われています")
+        elif result == "invalid":
+            st.error("ユーザー名またはパスワードが不正です")
         else:
-            st.error(result)
+            st.error(f"登録失敗：{result}")
     st.stop()
 
 # 🪞 表示名・仮ID編集（ログイン後・表示切り替え可能）
