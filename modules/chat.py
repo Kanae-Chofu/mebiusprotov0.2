@@ -14,7 +14,8 @@ from modules.feedback import (
     length_feedback,
     diversity_feedback,
     disclosure_feedback,
-    continuity_feedback  # ← 追加された指標
+    continuity_feedback,  # ← 追加された指標
+    continuity_duration_feedback
 )
 
 DB_PATH = "db/mebius.db"
@@ -149,7 +150,8 @@ def render():
         st.write("・感情語の使用：" + emotion_feedback(user, partner))
         st.write("・自己開示度：" + disclosure_feedback(user, partner))
         st.write("・話題の広がり：" + diversity_feedback(user, partner))
-
+        st.write("・関係性の継続性：" + continuity_duration_feedback(user, partner))
+        
         # 手動フィードバック入力
         st.markdown("---")
         st.markdown("### 📝 あなたのフィードバック")
