@@ -194,3 +194,23 @@ def disclosure_feedback(sender, receiver):
         return f"自分のことを適度に語ることで、安心感が育まれていたようです（{count}件）"
     else:
         return f"自己開示は控えめでした。問いや沈黙が中心だったかもしれません（{count}件）"
+
+# 🤝 関係性の継続性フィードバック
+def continuity_duration_feedback(sender, receiver):
+    rows = get_chat(sender, receiver)
+    if not rows:
+        return "会話がまだ始まっていません"
+    
+    # 最初と最後の会話日時を取得
+    start = datetime.strptime(rows[0][2], "%Y-%m-%d %H:%M:%S")
+    end = datetime.strptime(rows[-1][2], "%Y-%m-%d %H:%M:%S")
+    duration_days = (end - start).days
+
+    if duration_days >= 30:
+        return f"この関係は {duration_days} 日間続いており、継続的な対話が育っています"
+    elif duration_days >= 7:
+        return f"この関係は {duration_days} 日間続いており、安定したやりとりが見られます"
+    elif duration_days >= 2:
+        return f"この関係は {duration_days} 日間続いており、対話の芽が育ち始めています"
+    else:
+        return f"会話は始まったばかりで、これから関係性が育っていくかもしれません（{duration_days}日）"
