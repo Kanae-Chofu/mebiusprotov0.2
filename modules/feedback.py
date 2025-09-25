@@ -60,6 +60,30 @@ def get_chat(sender, receiver):
     finally:
         conn.close()
 
+# 🤖 会話の連続性フィードバック
+def continuity_feedback(sender, receiver):
+    rows = get_chat(sender, receiver)
+    if len(rows) < 4:
+        return "会話の流れを分析するには少し短すぎます"
+
+    # 発言間隔（秒）を計算
+    timestamps = [datetime.strptime(r[2], "%Y-%m-%d %H:%M:%S") for r in rows]
+    gaps = [(timestamps[i] - timestamps[i-1]).total_seconds() for i in range(1, len(timestamps))]
+
+    # 応答の交互性（交互に話してるか）
+    turns = [r[0] for r in rows]
+    switch_count = sum(1 for i in range(1, len(turns)) if turns[i] != turns[i-1])
+    switch_ratio = switch_count / (len(turns) - 1)
+
+    # 平均間隔と交互性から評価
+    avg_gap = sum(gaps) / len(gaps)
+    if avg_gap < 90 and switch_ratio > 0.6:
+        return f"自然な流れで会話が続いていました（平均間隔 {int(avg_gap)}秒・交互率 {int(switch_ratio*100)}%）"
+    elif avg_gap < 180:
+        return f"適度なテンポで会話が展開されていました（平均間隔 {int(avg_gap)}秒）"
+    else:
+        return f"間が空きがちで、会話の流れはやや途切れがちでした（平均間隔 {int(avg_gap)}秒）"
+    
 # 🤖 発言割合
 def auto_feedback(sender, receiver):
     rows = get_chat(sender, receiver)

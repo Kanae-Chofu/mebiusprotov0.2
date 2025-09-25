@@ -13,12 +13,11 @@ from modules.feedback import (
     response_feedback,
     length_feedback,
     diversity_feedback,
-    disclosure_feedback
+    disclosure_feedback,
+    continuity_feedback  # ← 追加された指標
 )
 
 DB_PATH = "db/mebius.db"
-
-# 定数（設計意図の明示）
 MAX_NAME_LEN = 64
 MAX_FEEDBACK_LEN = 150
 
@@ -132,27 +131,29 @@ def render():
                 </span></div>""", unsafe_allow_html=True
             )
 
-        # メッセージ入力（Enterキー送信）
+        # メッセージ入力
         new_msg = st.chat_input("メッセージを入力")
         if new_msg:
             save_message(user, partner, new_msg)
             st.rerun()
 
-        # AIフィードバック（8項目）
+        # AIフィードバック（設計順に並べる）
         st.markdown("---")
         st.markdown("### 🤖 AIフィードバック")
+        st.write("・会話の長さ：" + length_feedback(user, partner))
+        st.write("・会話の連続性：" + continuity_feedback(user, partner))
+        st.write("・沈黙の余白：" + silence_feedback(user, partner))
+        st.write("・応答率：" + response_feedback(user, partner))
         st.write("・発言割合：" + auto_feedback(user, partner))
         st.write("・問いの頻度：" + question_feedback(user, partner))
-        st.write("・沈黙の余白：" + silence_feedback(user, partner))
         st.write("・感情語の使用：" + emotion_feedback(user, partner))
-        st.write("・応答率：" + response_feedback(user, partner))
-        st.write("・会話の長さ：" + length_feedback(user, partner))
-        st.write("・話題の広がり：" + diversity_feedback(user, partner))
         st.write("・自己開示度：" + disclosure_feedback(user, partner))
+        st.write("・話題の広がり：" + diversity_feedback(user, partner))
 
         # 手動フィードバック入力
         st.markdown("---")
         st.markdown("### 📝 あなたのフィードバック")
+        st.write("この会話を振り返って、どんなことを感じましたか？問いでも、感想でも、ひとことでもOKです。")
         feedback_text = st.text_input("フィードバックを入力", key="feedback_input", max_chars=MAX_FEEDBACK_LEN)
         if st.button("送信"):
             if feedback_text:
@@ -162,7 +163,7 @@ def render():
             else:
                 st.warning("フィードバックを入力してください")
 
-        # 過去のフィードバック履歴（選択式表示）
+        # 過去のフィードバック履歴
         st.markdown("---")
         st.markdown("### 🕊 過去のフィードバックを振り返る")
         feedback_list = get_feedback(user, partner)
