@@ -5,6 +5,7 @@ from modules.utils import now_str
 
 # MeCabによる日本語形態素解析
 import MeCab
+import unidic_lite
 
 DB_PATH = "db/mebius.db"
 
@@ -179,9 +180,9 @@ def length_feedback(sender, receiver):
     else:
         return f"短めの会話でした（{len(rows)}件・{int(duration)}分）"
 
-# ✅ MeCabを使った語彙抽出（日本語対応）
+# 🤖 日本語テキストの形態素解析とトークン化
 def tokenize_japanese(text):
-    tagger = MeCab.Tagger("-Owakati")
+    tagger = MeCab.Tagger(f"-d {unidic_lite.DICDIR} -Owakati")
     return tagger.parse(text).strip().split()
 
 # 🤖 話題の広がり（語彙の多様性）
