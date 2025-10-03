@@ -63,8 +63,17 @@ def load_messages(thread_id):
     conn = sqlite3.connect(DB_PATH)
     try:
         c = conn.cursor()
-        c.execute("SELECT username, message, timestamp FROM board_messages WHERE thread_id=? ORDER BY id DESC", (thread_id,))
+        c.execute("SELECT id, username, message, timestamp FROM board_messages WHERE thread_id=? ORDER BY id DESC", (thread_id,))
         return c.fetchall()
+    finally:
+        conn.close()
+
+def delete_message(message_id):
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        c = conn.cursor()
+        c.execute("DELETE FROM board_messages WHERE id=?", (message_id,))
+        conn.commit()
     finally:
         conn.close()
 
@@ -106,8 +115,15 @@ def render():
             st.rerun()
 
         messages = load_messages(st.session_state.thread_id)
-        for username, msg, ts in messages:
-            st.write(f"[{ts} JST] **{username}**: {msg}")
+        for mid, username, msg, ts in messages:
+            col1, col2 = st.columns([8, 1])
+            with col1:
+                st.write(f"[{ts} JST] **{username}**: {msg}")
+            with col2:
+                if username == user:
+                    if st.button("🗑️", key=f"delete_{mid}"):
+                        delete_message(mid)
+                        st.rerun()
 
         # メッセージ送信欄（Enterキーで送信可能）
         msg = st.chat_input(f"メッセージ（{MAX_MESSAGE_LEN}文字まで）")
