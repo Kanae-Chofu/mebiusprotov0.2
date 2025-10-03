@@ -1,5 +1,6 @@
 import streamlit as st
 import sqlite3
+import time
 from modules.user import get_current_user, get_display_name
 from modules.utils import now_str
 from modules.feedback import (
@@ -14,7 +15,7 @@ from modules.feedback import (
     length_feedback,
     diversity_feedback,
     disclosure_feedback,
-    continuity_feedback,  # ← 追加された指標
+    continuity_feedback,
     continuity_duration_feedback
 )
 
@@ -120,17 +121,24 @@ def render():
         st.session_state.partner = partner
         st.write(f"チャット相手： `{get_display_name(partner)}`")
 
-        # メッセージ表示（吹き出しスタイル）
-        messages = get_messages(user, partner)
-        for sender, msg in messages:
-            align = "right" if sender == user else "left"
-            bg = "#1F2F54" if align == "right" else "#426AB3"
-            st.markdown(
-                f"""<div style='text-align:{align}; margin:5px 0;'>
-                <span style='background-color:{bg}; color:#FFFFFF; padding:8px 12px; border-radius:10px; display:inline-block; max-width:80%;'>
-                {msg}
-                </span></div>""", unsafe_allow_html=True
-            )
+        # メッセージ表示（毎秒更新）
+        st.markdown("---")
+        st.subheader("📨 メッセージ履歴（自動更新）")
+        message_container = st.empty()
+        for _ in range(1):  # 初回のみ描画（無限ループは避ける）
+            with message_container:
+                messages = get_messages(user, partner)
+                for sender, msg in messages:
+                    align = "right" if sender == user else "left"
+                    bg = "#1F2F54" if align == "right" else "#426AB3"
+                    st.markdown(
+                        f"""<div style='text-align:{align}; margin:5px 0;'>
+                        <span style='background-color:{bg}; color:#FFFFFF; padding:8px 12px; border-radius:10px; display:inline-block; max-width:80%;'>
+                        {msg}
+                        </span></div>""", unsafe_allow_html=True
+                    )
+            time.sleep(1)
+            st.rerun()
 
         # メッセージ入力
         new_msg = st.chat_input("メッセージを入力")
@@ -151,7 +159,7 @@ def render():
         st.write("・自己開示度：" + disclosure_feedback(user, partner))
         st.write("・話題の広がり：" + diversity_feedback(user, partner))
         st.write("・関係性の継続性：" + continuity_duration_feedback(user, partner))
-        
+
         # 手動フィードバック入力
         st.markdown("---")
         st.markdown("### 📝 あなたのフィードバック")
